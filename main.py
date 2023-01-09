@@ -1,12 +1,13 @@
-from re import sub, findall
+from re import sub, findall, split
 from string import ascii_letters
 from itertools import combinations
 
 # recieves a string of javascript code and returns it with redundant var and let delarations removed
 def removeRedundantDeclarations(text):
-	
-	splitText = text.split(';')
-	length = len(splitText)-1
+	splitText = split(';\n', text)
+	length = len(splitText)
+	if length < 2:
+		return text
 	toReturn = ''
 	i = 0
 	while i < length:
@@ -15,6 +16,8 @@ def removeRedundantDeclarations(text):
 			toReturn += splitText[i]+';'
 			i += 1
 			continue
+		if i+1 >= length:
+			break
 		startOfNext = splitText[i+1][:4]
 		if startOfNext != 'var ' and  startOfNext != 'let ':
 			toReturn += splitText[i]+';'
@@ -31,7 +34,8 @@ def removeRedundantDeclarations(text):
 			toReturn += ','+splitText[i][4:]
 			i += 1
 		toReturn += ';'
-	return toReturn
+
+	return toReturn[:-1]  # This function adds an extra ; so remove it
 
 def replaceTrueFalse(parsedText):
 	# only replace if true/false not within a var or function name 
@@ -122,8 +126,10 @@ def editFuncVars(parsedText):
 		return parsedText
 	for name in funcNames:
 		# find the function and snip it out so we can edit it
-		thisFunc = parsedText[parsedText.find(name):]
-		print(thisFunc)  # WIP
+		start = parsedText.find(name)
+		firstOpenBracket = parsedText.find('{', start, 1)
+		thisFunc = parsedText[firstOpenBracket:]
+		#print(thisFunc)  # WIP
 
 	return parsedText
 	
