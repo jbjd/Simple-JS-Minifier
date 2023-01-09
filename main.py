@@ -4,7 +4,7 @@ from itertools import combinations
 
 # recieves a string of javascript code and returns it with redundant var and let delarations removed
 def removeRedundantDeclarations(text):
-	splitText = split(';\n', text)
+	splitText = split(';', text)
 	length = len(splitText)
 	if length < 2:
 		return text
@@ -17,6 +17,7 @@ def removeRedundantDeclarations(text):
 			i += 1
 			continue
 		if i+1 >= length:
+			toReturn += splitText[i]+';'
 			break
 		startOfNext = splitText[i+1][:4]
 		if startOfNext != 'var ' and  startOfNext != 'let ':
@@ -121,15 +122,30 @@ def fixParentheses(parsedText):
 # shortens local variables if they exist, will not edit globals for safety.
 # This program is assuming that it will run on a single file so theres no great way to fix global variables' names
 def editFuncVars(parsedText):
-	funcNames = findall('[^a-zA-Z0-9]function .+\(', parsedText)
+	funcNames = split('(?<=[^a-zA-Z0-9])function(?=[\( ])', parsedText)
+	funcNames = funcNames[1:]
 	if not funcNames:
 		return parsedText
+
 	for name in funcNames:
 		# find the function and snip it out so we can edit it
-		start = parsedText.find(name)
-		firstOpenBracket = parsedText.find('{', start, 1)
-		thisFunc = parsedText[firstOpenBracket:]
-		#print(thisFunc)  # WIP
+		thisFunc = name
+		firstOpenBracket = thisFunc.find('{')
+		end = firstOpenBracket
+		# find } that closes function
+		depthCount = 0
+		for char in thisFunc[firstOpenBracket:]:
+			end += 1
+			if char == '{':
+				depthCount += 1
+			elif char == '}':
+				depthCount -= 1
+			if depthCount == 0:
+				break
+		thisFunc = thisFunc[:end]
+		
+		shortFunc = shortenVarNames(thisFunc)
+		parsedText = parsedText.replace(thisFunc, shortFunc, 1)
 
 	return parsedText
 	
@@ -176,13 +192,13 @@ if __name__ == "__main__":
 		}
 		if (true)
 			console.log( "I love it!" );
-			console.log( "doube log!" );
+			console.log( "double log!" );
 		}
+		console.log('I\'m testing putting something after the function to see if my code extracts it properly')
 		'''
-	output = shortenVarNames("var asdf=6;console.log('fun')\nvar asdfasdf=28;if(!0){var test=9}console.log(asdf)\nasdfasdf=99;")
-	#realExample = readFileAsString(r"C:\Users\jimde\OneDrive\Desktop\main.js")
-	output = minifyFunction(example)
-	#output = minifyFunction(realExample)
-	#copToClipboard(output)
-	print('====')
-	print(output)
+	#output = shortenVarNames("var asdf=6;console.log('fun')\nvar asdfasdf=28;if(!0){var test=9}console.log(asdf)\nasdfasdf=99;")
+	realExample = readFileAsString(r"C:\Users\jimde\OneDrive\Desktop\main.js")
+	#output = minifyFunction(example)
+	output = minifyFunction(realExample)
+	copToClipboard(output)
+	#print('==========', output)
