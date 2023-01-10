@@ -122,12 +122,26 @@ def fixParentheses(parsedText):
 # shortens local variables if they exist, will not edit globals for safety.
 # This program is assuming that it will run on a single file so theres no great way to fix global variables' names
 def editFuncVars(parsedText):
-	funcNames = split('(?<=[^a-zA-Z0-9])function(?=[\( ])', parsedText)
-	funcNames = funcNames[1:]
-	if not funcNames:
+	funcSplit = split('(?<=[^a-zA-Z0-9])function(?=[\( ])', parsedText)
+	splitFuncNames = funcSplit[1:]
+	if not splitFuncNames:
 		return parsedText
+	funcNames = []
+	i = 0
+	newIndex = 0
+	# merge functions within functions since function(){ function(){} } gets messed up by the split above
+	while i < len(splitFuncNames):
+		name = splitFuncNames[i]
+		evenBrackets = splitFuncNames[i].count('{') - splitFuncNames[i].count('}')
+		funcNames.append(splitFuncNames[i])
+		i += 1
+		while evenBrackets != 0 and i < len(splitFuncNames):
+			evenBrackets += splitFuncNames[i].count('{') - splitFuncNames[i].count('}')
+			funcNames[newIndex] += 'function'+splitFuncNames[i]
+			i += 1
+		newIndex += 1
 
-	for name in funcNames:
+	for i, name in enumerate(funcNames):
 		# find the function and snip it out so we can edit it
 		thisFunc = name
 		firstOpenBracket = thisFunc.find('{')
@@ -143,11 +157,10 @@ def editFuncVars(parsedText):
 			if depthCount == 0:
 				break
 		thisFunc = thisFunc[:end]
-		
 		shortFunc = shortenVarNames(thisFunc)
-		parsedText = parsedText.replace(thisFunc, shortFunc, 1)
-
-	return parsedText
+		# replace old function in parsed text with new function
+		funcNames[i] = funcNames[i].replace(thisFunc, shortFunc, 1)
+	return funcSplit[0]+'function'+'function'.join(funcNames)
 	
 
 # takes a function as a string (everything within first and last bracket { })
@@ -160,7 +173,6 @@ def shortenVarNames(text):
 		if(i > 50):
 			break
 		curChar = newNames[i+1][0]
-		
 	return text
 
 def readFileAsString(filePath):
